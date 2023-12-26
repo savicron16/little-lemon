@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Image, StyleSheet, Text, KeyboardAvoidingView, Platform, TextInput, Pressable } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logo from '../images/Logo.png'
 import { validateEmail, validateName } from '../ValidationUtils';
+import { OnboardingProvider, useOnboarding } from '../OnboardingContext';
 import { useFonts } from "expo-font";
 import { StatusBar } from 'react-native';
 
-const Onboarding = ({ onOnboardingComplete }) => {
-  const [name, setName] = useState('');
+const Onboarding = ({ navigation }) => {
+  const [firstName, setName] = useState('');
   const [email, setEmail] = useState('');
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    setIsFormValid(!nameError && !emailError && name && email);
-  }, [name, email, nameError, emailError]);
+    setIsFormValid(!nameError && !emailError && firstName && email);
+  }, [firstName, email, nameError, emailError]);
 
   const handleNameChange = (name) => {
     setName(name);
@@ -26,10 +28,20 @@ const Onboarding = ({ onOnboardingComplete }) => {
     setEmailError(validateEmail(email));
   };
 
-  const handleOnboarding = () => {
+  const handleOnboarding = async () => {
     if (isFormValid) {
-      onOnboardingComplete(); // Call the completion handler
+      const userData = { firstName: firstName, email: email };
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      completeOnboarding(); // Call the completion handler
     }
+  };
+
+  const { setIsOnboarded } = useOnboarding();
+
+  const completeOnboarding = async () => {
+    // Save user data and then:
+    setIsOnboarded(true);
+    navigation.navigate('Home');
   };
 
 //   const validateName = (name) => {
@@ -85,9 +97,9 @@ const Onboarding = ({ onOnboardingComplete }) => {
         <TextInput
           style={styles.input}
           placeholder="Enter your name"
-          value={name}
+          value={firstName}
           onChangeText={handleNameChange}
-          onBlur={() => setNameError(validateName(name))}
+          onBlur={() => setNameError(validateName(firstName))}
         />
         {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
       </View>
@@ -117,7 +129,7 @@ const Onboarding = ({ onOnboardingComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    //justifyContent: 'center',
+    justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },

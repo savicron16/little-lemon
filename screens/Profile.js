@@ -6,6 +6,7 @@ import { validateEmail, validateName } from '../ValidationUtils';
 import * as ImagePicker from "expo-image-picker";
 import { useFonts } from "expo-font";
 import Checkbox from "expo-checkbox";
+import { useOnboarding } from '../OnboardingContext';
 
 const Profile = ({ navigation }) => {
 const [userData, setUserData] = useState({
@@ -19,26 +20,36 @@ const [userData, setUserData] = useState({
     specialOffers: false,
     newsletter: false,
 });
+
+const [discard, setDiscard] = useState(false);
+
+const { setIsOnboarded } = useOnboarding();
   
-  
-  const [lastName, setLastName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  
+ const getIsFormValid = () => {
+    return (
+      !validateName(userData.firstName) &&
+      !validateName(userData.lastName) &&
+      !validateEmail(userData.email) &&
+      validateNumber(userData.phoneNumber)
+    );
+  };
 
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const storedUserData = await AsyncStorage.getItem('userData');
-        if (storedUserData) {
-          setUserData(JSON.parse(storedUserData));
-        }
-      } catch (error) {
-        console.error('Failed to load user data', error);
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('userData');
+      if (storedUserData !== null) {
+        const data = JSON.parse(storedUserData);
+        setUserData(data);
       }
-    };
+    } catch (error) {
+      console.error('Failed to load user data', error);
+    }
+  };
 
-    loadUserData();
-  }, []);
+  loadUserData();
+}, [discard]);
+
 
   const validateNumber = number => {
     if (isNaN(number)) {
@@ -53,8 +64,20 @@ const [userData, setUserData] = useState({
       [key]: value,
     }));
   };
+
+  const handleSave = async (data) => {
+  try {
+    await AsyncStorage.setItem('userData', JSON.stringify(data));
+    alert('Profile updated successfully!');
+  } catch (error) {
+    console.error('Error saving user data', error);
+    alert('Failed to update profile.');
+  }
+};
+
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userData');
+    setIsOnboarded(false);
     navigation.navigate('Onboarding');
   };
 
@@ -160,7 +183,7 @@ const [userData, setUserData] = useState({
         <Text
           style={[
             styles.text,
-            validateEmail(userData.email) ? "" : styles.error,
+            !validateEmail(userData.email) ? "" : styles.error,
           ]}
         >
           Email
@@ -200,8 +223,18 @@ const [userData, setUserData] = useState({
       <Pressable style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </Pressable>
-
-
+      <View style={styles.buttons}>
+          <Pressable style={styles.discardBtn} onPress={() => setDiscard(true)}>
+            <Text style={styles.discardBtnText}>Discard changes</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.saveBtn, getIsFormValid() ? "" : styles.btnDisabled]}
+            onPress={() => handleSave(userData)}
+            disabled={!getIsFormValid()}
+          >
+            <Text style={styles.saveBtnText}>Save changes</Text>
+          </Pressable>
+      </View>
     </ScrollView>
       
     </KeyboardAvoidingView>
@@ -215,16 +248,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   logoutButton: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#ff6347',
-    borderRadius: 5,
+    backgroundColor: "#f4ce14",
+    borderRadius: 9,
+    alignSelf: "stretch",
+    marginVertical: 18,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#cc9a22",
   },
   logoutButtonText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 18,
+    color: "#3e524b",
+    fontFamily: "Karla-Bold",
+    alignSelf: "center",
+    
   },
   header: {
     padding: 12,

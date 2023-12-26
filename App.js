@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OnboardingProvider, useOnboarding } from './OnboardingContext';
 
 
 const Stack = createNativeStackNavigator();
@@ -29,20 +30,16 @@ const App = () => {
   };
 
   return (
+     <OnboardingProvider>
     <NavigationContainer>
       <Stack.Navigator>
-        {!isOnboarded ? (
-          <Stack.Screen name="Onboarding">
-            {props => <Onboarding {...props} onOnboardingComplete={handleOnboardingComplete} />}
-          </Stack.Screen>
-        ) : (
-          <>
-            <Stack.Screen name="Home" component={Home} />
-            <Stack.Screen name="Profile" component={Profile} />
-          </>
-        )}
+          <Stack.Screen name="Onboarding" component={Onboarding} />
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Profile" component={Profile} />
       </Stack.Navigator>
     </NavigationContainer>
+       
+     </OnboardingProvider>
   );
 };
 
