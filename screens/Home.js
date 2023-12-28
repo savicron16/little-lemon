@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { View, Image, TouchableOpacity,Text, Button, Pressable, StyleSheet, SafeAreaView, ScrollView, FlatList, ActivityIndicator} from 'react-native';
 import Logo from '../images/Logo.png'; // Adjust the path as necessary
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setupDatabaseAsync, storeDataInDbAsync, fetchDataFromDbAsync } from '../Database';
+import CategoryList from '../CategoryList';
+import HeroBanner from '../HeroBanner';
 
 
 
@@ -27,31 +30,44 @@ const Home = ({ navigation }) => {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
 
-const getMenu = async () => {
+  const getMenu = async () => {
   try { 
-   const response = await fetch(
-   'https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json' 
-      );
-      const json = await response.json();
-      setData(json.menu);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-   }; 
+    const response = await fetch(
+      'https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json');
+    const json = await response.json();
+    await storeDataInDbAsync(json.menu); // Store fetched data in DB
+    setData(json.menu);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    const fetchUserData = async () => {
+
+useEffect(() => {
+  const initializeApp = async () => {
+    try {
+      await setupDatabaseAsync();
       const storedUserData = await AsyncStorage.getItem('userData');
       if (storedUserData) {
         setUserData(JSON.parse(storedUserData));
+        const dataFromDb = await fetchDataFromDbAsync();
+        if (dataFromDb.length === 0) {
+          await getMenu(); // Fetch from the server if DB is empty
+        } else {
+          setData(dataFromDb); // Use data from DB
+          setLoading(false);
+        }
       }
-    };
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    fetchUserData();
-    getMenu();
+  initializeApp();
   }, []);
+
 
    const Item = ({ name, price, description, image }) => (
      <View style={styles.itemContainer}>
@@ -82,11 +98,12 @@ const getMenu = async () => {
 
   return (
      <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
         <Header userData={userData} onAvatarPress={() => navigation.navigate('Profile')} />
-        <View style={styles.scrollView}>
-          <Text style={styles.title}>Select your dish</Text>
-        </View>
+        <HeroBanner />
+          <View style={styles.middleContainer}>
+            <CategoryList />
+          </View>
+
           {isLoading ? (
          <ActivityIndicator />
          ) : (
@@ -94,9 +111,9 @@ const getMenu = async () => {
           data={data}
           keyExtractor={(item, index) => `menu-item-${index}`}
           renderItem={renderItem}
+          style={styles.menuList}
          />
          )}
-
 
           <Pressable
             style={styles.btn}
@@ -104,7 +121,6 @@ const getMenu = async () => {
               <Text style={styles.btnText}>Go to Profile</Text>
           </Pressable>
         
-      </View>
     </SafeAreaView>      
 
   );
@@ -116,17 +132,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', // or any other background color
   },
   container: {
-    flex: 1,
+  flex: 1,
+ },
+  middleContainer: {
+    flex: 1, // Use flex to allocate available space
+    justifyContent: 'center', // Align children vertically in the center
+    paddingHorizontal: 10,
+    maxHeight: 100,
+  },
+  menuList: {
+        flex: 1, // Allocate twice as much space for the menu list
   },
    logo: {
-    width: 100,
-    height: 100, 
+    width: 120,
+    height: 60, 
     resizeMode: 'contain',
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#0b9a6a",
   },
   headerContainer: {
@@ -138,8 +163,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#DEE3E9',
     borderBottomWidth: 1,
     borderBottomColor: '#e8e8e8', 
-    position: 'absolute', // Makes header stick to the top
-    top: 0,
+    elevation: 2, // Shadow for Android
+    shadowOpacity: 0.1, // Shadow for iOS
+    shadowRadius: 2,
+    shadowColor: '#000000',
+    shadowOffset: { height: 2, width: 0 },
     zIndex: 10,
   },
   avatar: {
