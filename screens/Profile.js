@@ -332,7 +332,6 @@ const styles = StyleSheet.create({
     fontFamily: "Karla-Bold",
   },
   discardBtn: {
-    flex: 1,
     backgroundColor: "#FFFFFF",
     borderRadius: 9,
     alignSelf: "stretch",

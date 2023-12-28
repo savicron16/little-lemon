@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { getFilteredMenuItems } from './Database';
 
-const CategoryList = () => {
+const CategoryList = ({ onCategorySelect }) => {
   const [categories, setCategories] = useState([
     { id: 'starters', name: 'Starters', selected: false },
     { id: 'mains', name: 'Mains', selected: false },
     { id: 'desserts', name: 'Desserts', selected: false },
     { id: 'drinks', name: 'Drinks', selected: false },
     { id: 'specials', name: 'Specials', selected: false },
-    // ... add more categories as needed
+    
   ]);
 
   const [activeCategories, setActiveCategories] = useState([]);
@@ -19,7 +19,7 @@ const CategoryList = () => {
       try {
         const filteredMenuItems = await getFilteredMenuItems(activeCategories);
         console.log('Filtered Menu Items: ', filteredMenuItems);
-        // Now you can set these filtered items to state or context as required
+        // can set these filtered items to state or context as required
       } catch (error) {
         console.error('Failed to filter menu items:', error);
       }
@@ -30,13 +30,29 @@ const CategoryList = () => {
     }
   }, [activeCategories]); // Re-run the effect when activeCategories change
 
-  // ... rest of your component
+//   const onCategorySelect = (category) => {
+//   setActiveCategories(prevActiveCategories => {
+//     // Check if the category is already selected
+//     if (prevActiveCategories.includes(category)) {
+//       // If it is, remove it from the array
+//       return prevActiveCategories.filter(cat => cat !== category);
+//     } else {
+//       // Otherwise, add it to the array
+//       return [...prevActiveCategories, category];
+//     }
+//   });
+// };
 
-  const toggleCategory = (id) => {
-    setCategories(categories =>
-      categories.map(category =>
-        category.id === id ? { ...category, selected: !category.selected } : category
-      )
+ const toggleCategory = (id) => {
+    setCategories((prevCategories) =>
+      prevCategories.map(category => {
+        if (category.id === id) {
+        const updatedCategory = { ...category, selected: !category.selected};
+          onCategorySelect(updatedCategory); // Call the callback with the updated category
+          return updatedCategory;
+        }
+        return category;
+      })
     );
   };
 
@@ -71,9 +87,7 @@ const styles = StyleSheet.create({
  
   categoriesList: {
     flexDirection: 'row',
-   // paddingHorizontal: 10,
     marginTop: 10,
-   // paddingVertical: 140,
   },
   categoryItem: {
     backgroundColor: '#F0F0F0',
@@ -84,14 +98,14 @@ const styles = StyleSheet.create({
     height: 40,
   },
   categoryItemSelected: {
-    backgroundColor: '#333', // Darker grey background for selected items
+    backgroundColor: '#333',
   },
   categoryText: {
     color: '#000',
     //fontSize: 14,
   },
   categoryTextSelected: {
-    color: '#fff', // White text for selected items
+    color: '#fff', 
   },
   titleText: {
     padding: 6,

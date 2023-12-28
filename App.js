@@ -9,6 +9,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingProvider, useOnboarding } from './OnboardingContext';
+import { setupDatabaseAsync } from './Database';
 
 
 const Stack = createNativeStackNavigator();
@@ -17,12 +18,21 @@ const App = () => {
   const [isOnboarded, setIsOnboarded] = useState(false);
 
   useEffect(() => {
+    const initializeApp = async () => {
+    try{
     const checkOnboardingStatus = async () => {
       const userData = await AsyncStorage.getItem('userData');
       setIsOnboarded(!!userData);
     };
-
-    checkOnboardingStatus();
+      await setupDatabaseAsync();
+      checkOnboardingStatus();
+    }
+    catch(error){
+      console.error('Error during initialization:', error);
+    }
+  }
+    initializeApp();
+    //
   }, []);
 
   const handleOnboardingComplete = () => {

@@ -11,7 +11,8 @@ const setupDatabaseAsync = async () => {
           name TEXT,
           description TEXT,
           price REAL,
-          image TEXT
+          image TEXT,
+          category TEXT
         );`,
         [],
         () => { resolve(); },
@@ -26,8 +27,8 @@ const storeDataInDbAsync = async (items) => {
     database.transaction(tx => {
       items.forEach(item => {
         tx.executeSql(
-          'INSERT INTO menu (name, description, price, image) VALUES (?, ?, ?, ?);',
-          [item.name, item.description, item.price, item.image],
+          'INSERT INTO menu (name, description, price, image, category) VALUES (?, ?, ?, ?, ?);',
+          [item.name, item.description, item.price, item.image, item.category],
           () => { resolve(); },
           (_, error) => { reject(error); }
         );
@@ -68,4 +69,29 @@ const getFilteredMenuItems = async (activeCategories) => {
   });
 };
 
-export { setupDatabaseAsync, storeDataInDbAsync, fetchDataFromDbAsync, getFilteredMenuItems };
+const getFilteredMenuItemsByNameAndCategory = async (searchText, activeCategories) => {
+  return new Promise((resolve, reject) => {
+    let query = `SELECT * FROM menu WHERE name LIKE ?`;
+    let params = [`%${searchText}%`]; // '%' is a wildcard in SQL
+
+    if (activeCategories.length > 0) {
+      const placeholders = activeCategories.map(() => '?').join(', ');
+      query += ` AND category IN (${placeholders})`;
+      params = params.concat(activeCategories);
+    }
+
+    database.transaction(tx => {
+      tx.executeSql(
+        query,
+        params,
+        (_, { rows }) => resolve(rows._array),
+        (_, error) => reject(error)
+      );
+    });
+  });
+};
+
+
+export { setupDatabaseAsync, storeDataInDbAsync,
+   fetchDataFromDbAsync, getFilteredMenuItems, 
+   getFilteredMenuItemsByNameAndCategory };

@@ -89,8 +89,14 @@ const Onboarding = ({ navigation }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.header}>
-        <Image source={Logo} style={styles.logo} />
-      </View>
+      <Image
+          style={styles.logo}
+          source={require("../images/Logo.png")}
+          accessible={true}
+          accessibilityLabel={"Little Lemon Logo"}
+        />
+    </View>
+      
       <Text style={styles.welcomeText}>Let us get to know you</Text>
       <View style={styles.inputContainer}>
         <Text style={styles.text}>First Name</Text>
@@ -138,10 +144,12 @@ const styles = StyleSheet.create({
     width: '120%',
     maxHeight: '15%',
     marginBottom: 80,
+    paddingVertical: 0,
     flexDirection: "row",
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: "#DEE3E9",
+    
     
   },
   logo: {

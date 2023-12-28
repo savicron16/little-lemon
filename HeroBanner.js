@@ -1,7 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, TextInput, StyleSheet } from 'react-native';
 
-const HeroBanner = () => {
+const HeroBanner = ( {onSearch} ) => {
+    const [searchText, setSearchText] = useState('');
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+  // Debounce the search function
+     const debouncedSearch = useCallback(
+        debounce((text) => {
+            if (onSearch) { // Check if onSearch is a function
+                onSearch(text);
+            }
+        }, 500),
+        [] // This effect should run once on mount
+    );
+
+  useEffect(() => {
+    // When searchText changes, call the debounced search
+    debouncedSearch(searchText);
+
+    // Cleanup the debounce function on component unmount
+    return debouncedSearch.cancel;
+  }, [searchText, debouncedSearch]);
+
   return (
     <View style={styles.bannerContainer}>
         <View style={styles.textContainer}>
@@ -15,7 +46,8 @@ const HeroBanner = () => {
             <TextInput 
             style={styles.searchBar} 
             placeholder="Search"
-            // Add more TextInput properties as needed
+            onChangeText={setSearchText} // Update searchText on every change
+            value={searchText}
             />
         </View>
       <Image 

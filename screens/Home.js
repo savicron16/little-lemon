@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { View, Image, TouchableOpacity,Text, Button, Pressable, StyleSheet, SafeAreaView, ScrollView, FlatList, ActivityIndicator} from 'react-native';
 import Logo from '../images/Logo.png'; // Adjust the path as necessary
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setupDatabaseAsync, storeDataInDbAsync, fetchDataFromDbAsync } from '../Database';
+import { setupDatabaseAsync, storeDataInDbAsync, fetchDataFromDbAsync,
+  getFilteredMenuItems, getFilteredMenuItemsByNameAndCategory} from '../Database';
 import CategoryList from '../CategoryList';
 import HeroBanner from '../HeroBanner';
 
@@ -29,6 +30,7 @@ const Home = ({ navigation }) => {
     const [userData, setUserData] = useState(null);
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
+    const [activeCategories, setActiveCategories] = useState([]);
 
   const getMenu = async () => {
   try { 
@@ -44,6 +46,17 @@ const Home = ({ navigation }) => {
   }
 };
 
+const handleCategorySelect = (selectedCategory) => {
+    setActiveCategories(prevCategories => {
+      const isSelected = prevCategories.includes(selectedCategory.id);
+      if (isSelected) {
+        return prevCategories.filter(catId => catId.id !== selectedCategory.id); // Deselect
+      } else {
+        return [...prevCategories, selectedCategory.id]; // Select
+      }
+    });
+  };
+
 
 useEffect(() => {
   const initializeApp = async () => {
@@ -52,24 +65,39 @@ useEffect(() => {
       const storedUserData = await AsyncStorage.getItem('userData');
       if (storedUserData) {
         setUserData(JSON.parse(storedUserData));
-        const dataFromDb = await fetchDataFromDbAsync();
-        if (dataFromDb.length === 0) {
-          await getMenu(); // Fetch from the server if DB is empty
-        } else {
-          setData(dataFromDb); // Use data from DB
-          setLoading(false);
-        }
+      }
+      const dataFromDb = await fetchDataFromDbAsync();
+      if (dataFromDb.length === 0) {
+        await getMenu(); // Fetch from the server if DB is empty
+      } else {
+        setData(dataFromDb); // Use data from DB
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error during initialization:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   initializeApp();
-  }, []);
+}, []); // Empty dependency array for initialization logic
+
+useEffect(() => {
+  const fetchFilteredData = async () => {
+    try {
+      const filteredItems = activeCategories.length > 0 
+        ? await getFilteredMenuItems(activeCategories) 
+        : await fetchDataFromDbAsync();
+      setData(filteredItems);
+    } catch (error) {
+      console.error('Error fetching filtered items:', error);
+    }
+  };
+    fetchFilteredData();
+}, [activeCategories]); // Depend on activeCategories
 
 
-   const Item = ({ name, price, description, image }) => (
+   const Item = ({ name, price, description, category, image }) => (
      <View style={styles.itemContainer}>
     <View style={styles.textContainer}>
       <Text style={styles.name}>{name}</Text>
@@ -96,12 +124,21 @@ useEffect(() => {
   }
 };
 
+ const handleSearch = async (text) => {
+    try {
+      const filteredItems = await getFilteredMenuItemsByNameAndCategory(text, activeCategories);
+      setData(filteredItems);
+    } catch (error) {
+      console.error('Error fetching filtered items', error);
+    }
+  };
+
   return (
      <SafeAreaView style={styles.safeArea}>
         <Header userData={userData} onAvatarPress={() => navigation.navigate('Profile')} />
-        <HeroBanner />
+        <HeroBanner onSearch={handleSearch} />
           <View style={styles.middleContainer}>
-            <CategoryList />
+            <CategoryList onCategorySelect={handleCategorySelect}/>
           </View>
 
           {isLoading ? (
